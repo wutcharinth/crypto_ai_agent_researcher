@@ -1,0 +1,10 @@
+langgraph
+langchain-google-genai
+ccxt
+pandas
+ta
+feedparser
+beautifulsoup4
+python-telegram-bot
+apscheduler
+python-dotenv
