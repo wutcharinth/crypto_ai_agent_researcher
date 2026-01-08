@@ -1,46 +1,52 @@
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+from typing import List
+import uvicorn
 import os
-import asyncio
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from app.agent_graph import app
 from dotenv import load_dotenv
+
+from app.agent_graph import app as agent_app
 
 load_dotenv()
 
-async def run_agent():
-    print("⏰ Triggering Agent Run...")
-    inputs = {"coins": ["BTC", "ETH", "SOL"]}
-    # LangGraph invoke is sync or async depending on configuration, 
-    # but the compiled app supports .invoke() which is sync.
-    # For async environments, we should check if we need ainvoke.
-    # Here we stick to simple invocation for the scheduler.
-    try:
-        result = await app.ainvoke(inputs)
-        print("✅ Run Complete.")
-    except Exception as e:
-        print(f"❌ Error during run: {e}")
+# Setup FastAPI
+app = FastAPI(title="Crypto AI Agent")
+templates = Jinja2Templates(directory="app/templates")
 
-async def main():
-    scheduler = AsyncIOScheduler()
+# Request Model
+class AnalyzeRequest(BaseModel):
+    coins: List[str]
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.post("/api/analyze")
+async def run_analysis(request: AnalyzeRequest):
+    print(f"Received analysis request for: {request.coins}")
     
-    # Schedule: 9 AM and 9 PM
-    scheduler.add_job(run_agent, 'cron', hour=9)
-    scheduler.add_job(run_agent, 'cron', hour=21)
+    inputs = {"coins": request.coins}
     
-    print("🚀 Crypto Analysis Agent Started.")
+    # Run Agent
+    # Note: agent_app.invoke is synchronous usually, unless compiled with async
+    # Since we are in an async FastAPI route, running blocking code might be an issue.
+    # However, for this MVP we'll try direct invocation. If it blocks, we'd wrap in run_in_executor.
+    formatted_coins = request.coins if request.coins else ["BTC"]
+    inputs = {"coins": formatted_coins}
     
-    # Start the scheduler
-    scheduler.start()
-    
-    # Run once immediately for verification/startup
-    print("running immediate startup check...")
-    await run_agent()
-    
-    # Keep the process alive
-    while True:
-        await asyncio.sleep(3600)
+    try:
+        # LangGraph invoke returns the final state
+        result = await agent_app.ainvoke(inputs)
+        final_report = result.get("final_report", "No report generated.")
+        return {"status": "success", "report": final_report}
+    except Exception as e:
+        print(f"Error: {e}")
+        return {"status": "error", "report": f"Analysis failed: {str(e)}"}
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        print("Stopping agent...")
+    # Get port from environment variable for Railway (default to 8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)

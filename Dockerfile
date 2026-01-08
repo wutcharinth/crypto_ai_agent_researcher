@@ -12,5 +12,8 @@ COPY . .
 # Set PYTHONPATH
 ENV PYTHONPATH=/app
 
-# Run the main script
-CMD ["python", "app/main.py"]
+# Expose port (Railway will override this with $PORT, but good practice)
+EXPOSE 8000
+
+# Run the FastAPI app using Uvicorn
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto AI Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center py-10">
+
+    <div class="w-full max-w-4xl px-4">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                Crypto AI Analyst
+            </h1>
+            <p class="text-gray-400 mt-2">Powered by Gemini 2.0 & LangGraph</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-gray-800 rounded-xl p-6 shadow-lg mb-8 border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-blue-300">Run Analysis</h2>
+            <form id="analyzeForm" class="flex flex-wrap gap-4 items-center">
+                <div class="flex items-center gap-2">
+                    <label class="text-gray-300">Coins:</label>
+                    <div class="flex gap-3">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="checkbox" name="coins" value="BTC" checked class="accent-blue-500 w-4 h-4"> BTC
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="checkbox" name="coins" value="ETH" checked class="accent-blue-500 w-4 h-4"> ETH
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="checkbox" name="coins" value="SOL" class="accent-blue-500 w-4 h-4"> SOL
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="checkbox" name="coins" value="DOGE" class="accent-blue-500 w-4 h-4"> DOGE
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="ml-auto">
+                    <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition-all shadow-md transform hover:scale-105 flex items-center gap-2">
+                        <span id="btnText">analyze</span>
+                        <div id="loader" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Report Display -->
+        <div id="reportContainer" class="bg-gray-800 rounded-xl p-8 shadow-2xl border border-gray-700 min-h-[300px]">
+            <div id="placeholder" class="text-center text-gray-500 italic py-20">
+                Analysis report will appear here...
+            </div>
+            <div id="reportContent" class="prose prose-invert max-w-none hidden">
+                <!-- Markdown content injected here -->
+            </div>
+        </div>
+        
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        const form = document.getElementById('analyzeForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const loader = document.getElementById('loader');
+        const reportContent = document.getElementById('reportContent');
+        const placeholder = document.getElementById('placeholder');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // UI Loading State
+            submitBtn.disabled = true;
+            btnText.textContent = "Analyzing...";
+            loader.classList.remove('hidden');
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            // Get selected coins
+            const formData = new FormData(form);
+            const coins = formData.getAll('coins');
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coins: coins })
+                });
+                
+                const data = await response.json();
+                
+                // Render Markdown
+                placeholder.classList.add('hidden');
+                reportContent.classList.remove('hidden');
+                reportContent.innerHTML = marked.parse(data.report);
+                
+            } catch (error) {
+                alert("Error running analysis: " + error);
+            } finally {
+                // Reset UI
+                submitBtn.disabled = false;
+                btnText.textContent = "Analyze";
+                loader.classList.add('hidden');
+                submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        });
+    </script>
+</body>
+</html>

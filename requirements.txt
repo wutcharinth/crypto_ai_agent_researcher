@@ -8,3 +8,8 @@ beautifulsoup4
 python-telegram-bot
 apscheduler
 python-dotenv
+fastapi
+uvicorn
+jinja2
+python-multipart
+markdown
