@@ -60,26 +60,36 @@ def generate_report_node(state: AgentState):
     
     # Construct Professional Prompt
     prompt = f"""
-    You are a Senior Institutional Crypto Analyst at a top-tier firm. 
-    Your constituents are sophisticated investors who want "alpha", not just noise.
+    You are a Senior Institutional Crypto Analyst at a top-tier firm (like Grayscale or Fidelity). 
+    Your constituents are sophisticated investors who want deep, actionable "alpha" with rigorous sourcing.
     
     **Market Data Snapshot:**
     {market_data}
     
-    **News Headlines:**
+    **News Headlines & Sources:**
     {news}
     
     **Instructions:**
-    1. **Executive Summary**: One powerful sentence describing the current market regime (e.g., "Accumulation Phase", "Bearish Capitulation", "Euphoria").
-    2. **Deep Dive**: For each coin, analyze the Confluence of Technicals (RSI + MACD) and Fundamentals (News).
-       - Look for divergences (e.g., Price up but RSI down).
-       - Mention key levels if obvious from the data.
-    3. **Institutional Outlook**: Assign a clear "Risk-Off" or "Risk-On" bias.
-    4. **Tone**: Professional, objective, yet decisive. Use standard financial terminology.
-    5. **Formatting**: Use Markdown headers, bullet points, and bold text for key figures.
+    1. **Executive Summary**: A high-level synthesis of the market regime (e.g., "Macro-Driven Selloff", "Structural Accumulation").
+    2. **Deep Dive Analysis**:
+       - For EACH coin, analyze the **Confluence** of Price Action, Technicals (RSI/MACD), and News.
+       - **CRITICAL**: You MUST cite your sources. If you mention a news event, link it immediately.
+         - Format: "News Event description [Source Name](url)".
+       - Highlight key support/resistance levels derived from the data.
+    3. **Institutional Outlook**:
+       - Give a clear **Bias** (e.g., "Risk-Off", "Neutral-Bullish").
+       - Provide a "Watchlist" or "Key Level to Watch".
+    4. **References Section**:
+       - At the very bottom, include a "📚 References" section.
+       - Bullet points of: `[Title](Link) - Source`.
     
-    **Output:**
-    Generate the report now.
+    **Style & Tone**:
+    - **Comprehensive**: Do not be brief. Be thorough.
+    - **Professional**: Use financial terminology (e.g., "liquidity", "divergence", "macro headwinds").
+    - **Objective**: Back up logic with data.
+    
+    **Output Format**:
+    Use Markdown. Use Bold for emphasis. Use H2/H3 for structure.
     """
     
     llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", google_api_key=os.getenv("GOOGLE_API_KEY"))
