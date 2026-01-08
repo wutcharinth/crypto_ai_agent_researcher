@@ -12,7 +12,8 @@ load_dotenv()
 # Define State
 class AgentState(TypedDict):
     coins: List[str]
-    market_data: dict
+    market_data: dict      # Snapshot for AI
+    chart_data: dict       # History for Frontend
     news: List[dict]
     final_report: str
 
@@ -20,51 +21,65 @@ class AgentState(TypedDict):
 
 def fetch_data_node(state: AgentState):
     """
-    Fetches price data and news in parallel (conceptually, though sequential here for simplicity).
+    Fetches price data and news. Prepares chart data.
     """
     coins = state['coins']
     market_data = {}
+    chart_data = {}
     
     print(f"Fetching data for {coins}...")
     for coin in coins:
-        df = fetch_crypto_data(coin)
+        df = fetch_crypto_data(coin, limit=100)
         df = calculate_technicals(df)
-        # Store last row as dict for the prompt
+        
         if not df.empty:
+            # Snapshot for AI
             last_row = df.iloc[-1].to_dict()
             market_data[coin] = last_row
+            
+            # History for Chart (serialize for JSON)
+            # keeping it simple: dates, close prices, and rsi
+            chart_data[coin] = {
+                "dates": df['timestamp'].dt.strftime('%Y-%m-%d %H:%M').tolist(),
+                "prices": df['close'].tolist(),
+                "rsi": df['rsi'].fillna(0).tolist(),
+                "macd": df['macd'].fillna(0).tolist()
+            }
     
     # Fetch News
     news = fetch_crypto_news()
     
-    return {"market_data": market_data, "news": news}
+    return {"market_data": market_data, "chart_data": chart_data, "news": news}
 
 def generate_report_node(state: AgentState):
     """
-    Uses Gemini to synthesize data and news into a report.
+    Uses Gemini to synthesize data and news into a professional report.
     """
     market_data = state['market_data']
     news = state['news']
     
-    # Construct Prompt
+    # Construct Professional Prompt
     prompt = f"""
-    You are a professional Crypto Market Analyst.
+    You are a Senior Institutional Crypto Analyst at a top-tier firm. 
+    Your constituents are sophisticated investors who want "alpha", not just noise.
     
-    **Market Data:**
+    **Market Data Snapshot:**
     {market_data}
     
-    **Top News Headlines:**
+    **News Headlines:**
     {news}
     
-    **Task:**
-    Write a concise but insightful market briefing for Telegram.
-    1. Summarize the price action and key technicals (RSI, MACD) for each coin.
-    2. Correlate any price moves with the news headlines if possible.
-    3. Provide a 'Sentiment Score' (1-10) and a brief outlook (Bullish/Bearish/Neutral).
-    4. Keep it engaging but professional. Use emojis.
+    **Instructions:**
+    1. **Executive Summary**: One powerful sentence describing the current market regime (e.g., "Accumulation Phase", "Bearish Capitulation", "Euphoria").
+    2. **Deep Dive**: For each coin, analyze the Confluence of Technicals (RSI + MACD) and Fundamentals (News).
+       - Look for divergences (e.g., Price up but RSI down).
+       - Mention key levels if obvious from the data.
+    3. **Institutional Outlook**: Assign a clear "Risk-Off" or "Risk-On" bias.
+    4. **Tone**: Professional, objective, yet decisive. Use standard financial terminology.
+    5. **Formatting**: Use Markdown headers, bullet points, and bold text for key figures.
     
-    **Format:**
-    start with "🚀 Crypto Update [Morning/Evening]"
+    **Output:**
+    Generate the report now.
     """
     
     llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", google_api_key=os.getenv("GOOGLE_API_KEY"))
@@ -74,13 +89,8 @@ def generate_report_node(state: AgentState):
 
 def dispatch_node(state: AgentState):
     """
-    Placeholder for sending to Telegram.
+    Returns state for API to pick up.
     """
-    report = state['final_report']
-    print("\n--- FINAL REPORT ---")
-    print(report)
-    print("--------------------")
-    # In production, this would call syntax to send to Telegram API
     return {}
 
 # Graph Definition

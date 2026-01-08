@@ -41,7 +41,13 @@ async def run_analysis(request: AnalyzeRequest):
         # LangGraph invoke returns the final state
         result = await agent_app.ainvoke(inputs)
         final_report = result.get("final_report", "No report generated.")
-        return {"status": "success", "report": final_report}
+        chart_data = result.get("chart_data", {})
+        
+        return {
+            "status": "success", 
+            "report": final_report,
+            "chart_data": chart_data
+        }
     except Exception as e:
         print(f"Error: {e}")
         return {"status": "error", "report": f"Analysis failed: {str(e)}"}
